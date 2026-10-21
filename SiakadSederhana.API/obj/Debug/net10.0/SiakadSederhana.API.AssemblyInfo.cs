@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SiakadSederhana.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e1371fb305d314d0dd27ff5eb4c67c7c7327c9bc")]
 [assembly: System.Reflection.AssemblyProductAttribute("SiakadSederhana.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SiakadSederhana.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
