@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="SiakadSederhana.API/SiakadSederhana.API.csproj" />
+  <Project Path="SiakadSederhana/SiakadSederhana.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
+</Solution>

@@ -1,0 +1,6 @@
+@SiakadSederhana.API_HostAddress = http://localhost:5103
+
+GET {{SiakadSederhana.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
