@@ -38,6 +38,7 @@ namespace SiakadSederhana
 
             builder.Services.AddSingleton<DosenService>();
             builder.Services.AddSingleton<MahasiswaService>();
+            builder.Services.AddSingleton<ToastService>();
 
             return builder.Build();
         }

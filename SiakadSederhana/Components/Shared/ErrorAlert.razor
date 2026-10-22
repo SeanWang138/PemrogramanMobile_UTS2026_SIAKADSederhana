@@ -1,0 +1,26 @@
+<div class="error-alert" role="alert">
+    <svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M12 7.5v5M12 16.2v.01"></path>
+    </svg>
+    <div class="error-isi">
+        <strong>@Judul</strong>
+        @if (!string.IsNullOrWhiteSpace(Pesan))
+        {
+            <p>@Pesan</p>
+        }
+    </div>
+    @if (CobaLagi.HasDelegate)
+    {
+        <button type="button" class="btn btn-outline-danger btn-sm error-aksi" @onclick="CobaLagi">
+            Coba Lagi
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public string Judul { get; set; } = "Tidak dapat memuat data";
+    [Parameter] public string? Pesan { get; set; }
+    [Parameter] public EventCallback CobaLagi { get; set; }
+}

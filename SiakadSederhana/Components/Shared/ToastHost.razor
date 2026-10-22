@@ -1,0 +1,59 @@
+@implements IDisposable
+@inject ToastService Toast
+
+<div class="toast-container" aria-live="polite" aria-atomic="true">
+    @foreach (var item in daftar)
+    {
+        <div class="toast-blazor @(item.Jenis == ToastJenis.Sukses ? "toast-sukses" : "toast-gagal")">
+            @if (item.Jenis == ToastJenis.Sukses)
+            {
+                <svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="m8.5 12.5 2.5 2.5 4.5-5"></path>
+                </svg>
+            }
+            else
+            {
+                <svg class="ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M12 7.5v5M12 16.2v.01"></path>
+                </svg>
+            }
+            <span class="toast-pesan">@item.Pesan</span>
+            <button type="button" class="toast-tutup" @onclick="() => Tutup(item)" aria-label="Tutup notifikasi">
+                &times;
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    private readonly List<ToastItem> daftar = new();
+
+    protected override void OnInitialized() => Toast.AdaToastBaru += Tambah;
+
+    private void Tambah(ToastItem item)
+    {
+        _ = TampilkanAsync(item);
+    }
+
+    private async Task TampilkanAsync(ToastItem item)
+    {
+        daftar.Add(item);
+        await InvokeAsync(StateHasChanged);
+
+        await Task.Delay(TimeSpan.FromSeconds(4));
+        daftar.Remove(item);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void Tutup(ToastItem item)
+    {
+        daftar.Remove(item);
+        StateHasChanged();
+    }
+
+    public void Dispose() => Toast.AdaToastBaru -= Tambah;
+}
