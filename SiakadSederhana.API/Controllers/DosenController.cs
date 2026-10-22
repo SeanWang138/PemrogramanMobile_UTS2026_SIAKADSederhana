@@ -32,13 +32,22 @@ namespace SiakadSederhana.API.Controllers
         [HttpPost]
         public async Task<ActionResult> Create(CreateDosenDto dto)
         {
-            if (await _context.Dosen.AnyAsync(d => d.Nidn == dto.Nidn))
+            var nidn = dto.Nidn.Trim();
+            if (await _context.Dosen.AnyAsync(d => d.Nidn.ToLower() == nidn.ToLower()))
                 return Conflict(new { message = "NIDN sudah terdaftar." });
 
-            var dosen = new Dosen { Nidn = dto.Nidn, NamaDosen = dto.NamaDosen, Email = dto.Email, Prodi = dto.Prodi };
+            var dosen = new Dosen
+            {
+                Nidn = nidn,
+                NamaDosen = dto.NamaDosen.Trim(),
+                Email = dto.Email.Trim(),
+                Prodi = dto.Prodi.Trim()
+            };
             _context.Dosen.Add(dosen);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetById), new { id = dosen.DosenId }, dosen);
+
+            var result = new DosenDto(dosen.DosenId, dosen.Nidn, dosen.NamaDosen, dosen.Email, dosen.Prodi);
+            return CreatedAtAction(nameof(GetById), new { id = dosen.DosenId }, result);
         }
 
         [HttpPut("{id}")]
@@ -47,10 +56,14 @@ namespace SiakadSederhana.API.Controllers
             var d = await _context.Dosen.FindAsync(id);
             if (d == null) return NotFound(new { message = "Dosen tidak ditemukan." });
 
-            if (await _context.Dosen.AnyAsync(x => x.Nidn == dto.Nidn && x.DosenId != id))
+            var nidn = dto.Nidn.Trim();
+            if (await _context.Dosen.AnyAsync(x => x.Nidn.ToLower() == nidn.ToLower() && x.DosenId != id))
                 return Conflict(new { message = "NIDN sudah digunakan oleh dosen lain." });
 
-            d.Nidn = dto.Nidn; d.NamaDosen = dto.NamaDosen; d.Email = dto.Email; d.Prodi = dto.Prodi;
+            d.Nidn = nidn;
+            d.NamaDosen = dto.NamaDosen.Trim();
+            d.Email = dto.Email.Trim();
+            d.Prodi = dto.Prodi.Trim();
             await _context.SaveChangesAsync();
             return NoContent();
         }

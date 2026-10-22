@@ -35,13 +35,27 @@ namespace SiakadSederhana.API.Controllers
         [HttpPost]
         public async Task<ActionResult> Create(CreateMahasiswaDto dto)
         {
-            if (await _context.Mahasiswa.AnyAsync(m => m.Nim == dto.Nim))
+            var nim = dto.Nim.Trim();
+            if (await _context.Mahasiswa.AnyAsync(m => m.Nim.ToLower() == nim.ToLower()))
                 return Conflict(new { message = "NIM sudah terdaftar." });
 
-            var mhs = new Mahasiswa { Nim = dto.Nim, NamaMahasiswa = dto.NamaMahasiswa, Email = dto.Email, Angkatan = dto.Angkatan, DosenId = dto.DosenId };
+            var dosen = await _context.Dosen.FindAsync(dto.DosenId);
+            if (dosen == null)
+                return BadRequest(new { message = "Dosen wali dengan ID tersebut tidak ditemukan. Silakan pilih dosen yang tersedia." });
+
+            var mhs = new Mahasiswa
+            {
+                Nim = nim,
+                NamaMahasiswa = dto.NamaMahasiswa.Trim(),
+                Email = dto.Email.Trim(),
+                Angkatan = dto.Angkatan,
+                DosenId = dosen.DosenId
+            };
             _context.Mahasiswa.Add(mhs);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetById), new { id = mhs.MahasiswaId }, mhs);
+
+            var result = new MahasiswaDto(mhs.MahasiswaId, mhs.Nim, mhs.NamaMahasiswa, mhs.Email, mhs.Angkatan, mhs.DosenId, dosen.NamaDosen);
+            return CreatedAtAction(nameof(GetById), new { id = mhs.MahasiswaId }, result);
         }
 
         [HttpPut("{id}")]
@@ -50,10 +64,18 @@ namespace SiakadSederhana.API.Controllers
             var m = await _context.Mahasiswa.FindAsync(id);
             if (m == null) return NotFound(new { message = "Mahasiswa tidak ditemukan." });
 
-            if (await _context.Mahasiswa.AnyAsync(x => x.Nim == dto.Nim && x.MahasiswaId != id))
+            var nim = dto.Nim.Trim();
+            if (await _context.Mahasiswa.AnyAsync(x => x.Nim.ToLower() == nim.ToLower() && x.MahasiswaId != id))
                 return Conflict(new { message = "NIM sudah digunakan mahasiswa lain." });
 
-            m.Nim = dto.Nim; m.NamaMahasiswa = dto.NamaMahasiswa; m.Email = dto.Email; m.Angkatan = dto.Angkatan; m.DosenId = dto.DosenId;
+            if (!await _context.Dosen.AnyAsync(d => d.DosenId == dto.DosenId))
+                return BadRequest(new { message = "Dosen wali dengan ID tersebut tidak ditemukan. Silakan pilih dosen yang tersedia." });
+
+            m.Nim = nim;
+            m.NamaMahasiswa = dto.NamaMahasiswa.Trim();
+            m.Email = dto.Email.Trim();
+            m.Angkatan = dto.Angkatan;
+            m.DosenId = dto.DosenId;
             await _context.SaveChangesAsync();
             return NoContent();
         }

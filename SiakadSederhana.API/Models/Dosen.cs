@@ -12,7 +12,7 @@ namespace SiakadSederhana.API.Models
         [Required, StringLength(100)]
         public string NamaDosen { get; set; } = string.Empty;
 
-        [Required, EmailAddress, StringLength(100)]
+        [Required, EmailAddress, RegularExpression(@"^[^@\s]+@[^@\s]+\.[^@\s]+$"), StringLength(100)]
         public string Email { get; set; } = string.Empty;
 
         [Required, StringLength(100)]

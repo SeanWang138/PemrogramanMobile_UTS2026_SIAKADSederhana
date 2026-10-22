@@ -34,7 +34,7 @@ namespace SiakadSederhana.API
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<SiakadDbContext>();
-                db.Database.EnsureCreated();
+                db.Database.Migrate();
             }
 
             app.Run();
