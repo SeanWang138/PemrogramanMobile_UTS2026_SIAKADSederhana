@@ -289,7 +289,6 @@ dotnet test SiakadSederhana.API.Tests/SiakadSederhana.API.Tests.csproj
 ## 📦 Tautan Deliverable
 
 * **Source code:** <https://github.com/SeanWang138/PemrogramanMobile_UTS2026_SIAKADSederhana>
-* **Video demo:** *(tautan menyusul / lihat deskripsi repositori)*
 
 ---
 
