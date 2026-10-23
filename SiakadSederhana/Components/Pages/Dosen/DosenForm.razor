@@ -1,0 +1,133 @@
+@page "/dosen/tambah"
+@page "/dosen/edit/{Id:int}"
+@inject DosenService DosenService
+@inject ToastService Toast
+@inject NavigationManager Navigasi
+
+<PageTitle>@(ModeEdit ? "Edit Dosen" : "Tambah Dosen")</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">@(ModeEdit ? "Edit Dosen" : "Tambah Dosen")</h1>
+        <p class="page-subtitle">
+            @(ModeEdit ? "Perbarui data dosen sesuai kebutuhan" : "Isi data dosen baru dengan lengkap")
+        </p>
+    </div>
+</div>
+
+<div class="siakad-card form-isi">
+    @if (memuatData)
+    {
+        <LoadingSpinner Pesan="Memuat data dosen..." />
+    }
+    else
+    {
+        <EditForm Model="@Form" OnValidSubmit="@SimpanAsync">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label for="nidn" class="form-label">NIDN <span class="wajib">*</span></label>
+                <InputText id="nidn" class="form-control" @bind-Value="Form.Nidn"
+                           placeholder="Contoh: 0512345678" maxlength="20" />
+                <ValidationMessage For="() => Form.Nidn" />
+            </div>
+
+            <div class="mb-3">
+                <label for="namaDosen" class="form-label">Nama Dosen <span class="wajib">*</span></label>
+                <InputText id="namaDosen" class="form-control" @bind-Value="Form.NamaDosen"
+                           placeholder="Contoh: Dr. Anita Wijaya" maxlength="100" />
+                <ValidationMessage For="() => Form.NamaDosen" />
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Email <span class="wajib">*</span></label>
+                <InputText id="email" type="email" class="form-control" @bind-Value="Form.Email"
+                           placeholder="Contoh: dosen@kampus.ac.id" maxlength="100" />
+                <ValidationMessage For="() => Form.Email" />
+            </div>
+
+            <div class="mb-3">
+                <label for="prodi" class="form-label">Program Studi <span class="wajib">*</span></label>
+                <InputText id="prodi" class="form-control" @bind-Value="Form.Prodi"
+                           placeholder="Contoh: Sistem Informasi" maxlength="100" />
+                <ValidationMessage For="() => Form.Prodi" />
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary" disabled="@sedangSimpan">
+                    @if (sedangSimpan)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                    }
+                    Simpan
+                </button>
+                <button type="button" class="btn btn-outline-secondary" @onclick="KeDaftar" disabled="@sedangSimpan">
+                    Batal
+                </button>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private CreateDosenDto Form { get; set; } = new();
+    private bool memuatData = true;
+    private bool sedangSimpan;
+
+    private bool ModeEdit => Id > 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!ModeEdit)
+        {
+            memuatData = false;
+            return;
+        }
+
+        var hasil = await DosenService.GetByIdAsync(Id);
+        if (hasil.Berhasil && hasil.Data is not null)
+        {
+            Form = new CreateDosenDto
+            {
+                Nidn = hasil.Data.Nidn,
+                NamaDosen = hasil.Data.NamaDosen,
+                Email = hasil.Data.Email,
+                Prodi = hasil.Data.Prodi
+            };
+            memuatData = false;
+        }
+        else
+        {
+            Toast.Gagal(hasil.Pesan ?? "Data dosen tidak ditemukan.");
+            Navigasi.NavigateTo("dosen");
+        }
+    }
+
+    private async Task SimpanAsync()
+    {
+        if (sedangSimpan) return;
+
+        sedangSimpan = true;
+        StateHasChanged();
+
+        var hasil = ModeEdit
+            ? await DosenService.UbahAsync(Id, Form)
+            : await DosenService.TambahAsync(Form);
+
+        if (hasil.Berhasil)
+        {
+            Toast.Sukses(ModeEdit
+                ? "Data dosen berhasil diperbarui."
+                : "Data dosen berhasil ditambahkan.");
+            Navigasi.NavigateTo("dosen");
+            return;
+        }
+
+        Toast.Gagal(hasil.Pesan ?? "Gagal menyimpan data dosen.");
+        sedangSimpan = false;
+    }
+
+    private void KeDaftar() => Navigasi.NavigateTo("dosen");
+}

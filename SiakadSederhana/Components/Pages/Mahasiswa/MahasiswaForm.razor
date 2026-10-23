@@ -1,0 +1,172 @@
+@page "/mahasiswa/tambah"
+@page "/mahasiswa/edit/{Id:int}"
+@inject MahasiswaService MahasiswaService
+@inject DosenService DosenService
+@inject ToastService Toast
+@inject NavigationManager Navigasi
+
+<PageTitle>@(ModeEdit ? "Edit Mahasiswa" : "Tambah Mahasiswa")</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">@(ModeEdit ? "Edit Mahasiswa" : "Tambah Mahasiswa")</h1>
+        <p class="page-subtitle">
+            @(ModeEdit ? "Perbarui data mahasiswa dan dosen walinya" : "Isi data mahasiswa baru dengan lengkap")
+        </p>
+    </div>
+</div>
+
+<div class="siakad-card form-isi">
+    @if (memuatData)
+    {
+        <LoadingSpinner Pesan="Memuat data..." />
+    }
+    else if (gagalMemuat)
+    {
+        <ErrorAlert Pesan="@pesanGagal" CobaLagi="MuatUlang" />
+    }
+    else
+    {
+        <EditForm Model="@Form" OnValidSubmit="@SimpanAsync">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label for="nim" class="form-label">NIM <span class="wajib">*</span></label>
+                <InputText id="nim" class="form-control" @bind-Value="Form.Nim"
+                           placeholder="Contoh: 72230001" maxlength="20" />
+                <ValidationMessage For="() => Form.Nim" />
+            </div>
+
+            <div class="mb-3">
+                <label for="namaMahasiswa" class="form-label">Nama Mahasiswa <span class="wajib">*</span></label>
+                <InputText id="namaMahasiswa" class="form-control" @bind-Value="Form.NamaMahasiswa"
+                           placeholder="Contoh: Budi Santoso" maxlength="100" />
+                <ValidationMessage For="() => Form.NamaMahasiswa" />
+            </div>
+
+            <div class="mb-3">
+                <label for="emailMhs" class="form-label">Email <span class="wajib">*</span></label>
+                <InputText id="emailMhs" type="email" class="form-control" @bind-Value="Form.Email"
+                           placeholder="Contoh: budi@student.kampus.ac.id" maxlength="100" />
+                <ValidationMessage For="() => Form.Email" />
+            </div>
+
+            <div class="mb-3">
+                <label for="angkatan" class="form-label">Angkatan <span class="wajib">*</span></label>
+                <InputNumber id="angkatan" class="form-control" @bind-Value="Form.Angkatan"
+                             placeholder="2020 - 2026" />
+                <ValidationMessage For="() => Form.Angkatan" />
+            </div>
+
+            <div class="mb-3">
+                <label for="dosenWali" class="form-label">Dosen Wali <span class="wajib">*</span></label>
+                <InputSelect id="dosenWali" class="form-select" @bind-Value="Form.DosenId">
+                    <option value="0">-- Pilih Dosen Wali --</option>
+                    @foreach (var d in daftarDosen)
+                    {
+                        <option value="@d.DosenId">@d.NamaDosen (@d.Nidn)</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => Form.DosenId" />
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary" disabled="@sedangSimpan">
+                    @if (sedangSimpan)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                    }
+                    Simpan
+                </button>
+                <button type="button" class="btn btn-outline-secondary" @onclick="KeDaftar" disabled="@sedangSimpan">
+                    Batal
+                </button>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private CreateMahasiswaDto Form { get; set; } = new();
+    private List<Dosen> daftarDosen = new();
+    private bool memuatData = true;
+    private bool gagalMemuat;
+    private string? pesanGagal;
+    private bool sedangSimpan;
+
+    private bool ModeEdit => Id > 0;
+
+    protected override async Task OnInitializedAsync() => await MuatUlang();
+
+    private async Task MuatUlang()
+    {
+        memuatData = true;
+        gagalMemuat = false;
+        pesanGagal = null;
+        StateHasChanged();
+
+        // Opsi dropdown dosen wali diambil dari API dosen.
+        var hasilDosen = await DosenService.GetSemuaAsync();
+        if (!hasilDosen.Berhasil || hasilDosen.Data is null || hasilDosen.Data.Count == 0)
+        {
+            memuatData = false;
+            gagalMemuat = true;
+            pesanGagal = hasilDosen.Pesan ?? "Gagal memuat daftar dosen wali. Dropdown tidak tersedia.";
+            return;
+        }
+        daftarDosen = hasilDosen.Data;
+
+        if (ModeEdit)
+        {
+            var hasilMhs = await MahasiswaService.GetByIdAsync(Id);
+            if (hasilMhs.Berhasil && hasilMhs.Data is not null)
+            {
+                Form = new CreateMahasiswaDto
+                {
+                    Nim = hasilMhs.Data.Nim,
+                    NamaMahasiswa = hasilMhs.Data.NamaMahasiswa,
+                    Email = hasilMhs.Data.Email,
+                    Angkatan = hasilMhs.Data.Angkatan,
+                    DosenId = hasilMhs.Data.DosenId
+                };
+            }
+            else
+            {
+                memuatData = false;
+                Toast.Gagal(hasilMhs.Pesan ?? "Data mahasiswa tidak ditemukan.");
+                Navigasi.NavigateTo("mahasiswa");
+                return;
+            }
+        }
+
+        memuatData = false;
+    }
+
+    private async Task SimpanAsync()
+    {
+        if (sedangSimpan) return;
+
+        sedangSimpan = true;
+        StateHasChanged();
+
+        var hasil = ModeEdit
+            ? await MahasiswaService.UbahAsync(Id, Form)
+            : await MahasiswaService.TambahAsync(Form);
+
+        if (hasil.Berhasil)
+        {
+            Toast.Sukses(ModeEdit
+                ? "Data mahasiswa berhasil diperbarui."
+                : "Data mahasiswa berhasil ditambahkan.");
+            Navigasi.NavigateTo("mahasiswa");
+            return;
+        }
+
+        Toast.Gagal(hasil.Pesan ?? "Gagal menyimpan data mahasiswa.");
+        sedangSimpan = false;
+    }
+
+    private void KeDaftar() => Navigasi.NavigateTo("mahasiswa");
+}

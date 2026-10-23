@@ -1,0 +1,304 @@
+@page "/mahasiswa"
+@inject MahasiswaService MahasiswaService
+@inject ToastService Toast
+@inject NavigationManager Navigasi
+
+<PageTitle>Daftar Mahasiswa</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Data Mahasiswa</h1>
+        <p class="page-subtitle">Daftar mahasiswa beserta dosen wali masing-masing</p>
+    </div>
+    <a href="mahasiswa/tambah" class="btn btn-accent">
+        <svg class="ikon-kecil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"></path>
+        </svg>
+        Tambah Mahasiswa
+    </a>
+</div>
+
+<div class="siakad-card">
+    @if (memuat)
+    {
+        <LoadingSpinner Pesan="Memuat data mahasiswa..." />
+    }
+    else if (gagal)
+    {
+        <ErrorAlert Pesan="@pesanGagal" CobaLagi="MuatData" />
+    }
+    else if (daftar.Count == 0)
+    {
+        <EmptyState Pesan="Belum ada data mahasiswa."
+                    SubPesan="Mulai dengan menambahkan mahasiswa pertama."
+                    TeksAksi="Tambah Mahasiswa"
+                    Aksi="KeFormTambah" />
+    }
+    else
+    {
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+            <span class="text-muted small">@TotalData dari @daftar.Count data mahasiswa</span>
+            <input type="search" class="form-control cari-box" placeholder="Cari NIM atau nama..."
+                   @bind="kataCari" @bind:event="oninput" @bind:after="ResetHalaman" aria-label="Cari mahasiswa" />
+        </div>
+
+        @if (!HasilPencarian.Any())
+        {
+            <EmptyState Pesan="Tidak ada mahasiswa yang cocok dengan pencarian."
+                        SubPesan="Coba kata kunci lain." />
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-siakad">
+                    <thead>
+                        <tr>
+                            <th>
+                                <button type="button" class="th-urut" @onclick='() => Urutkan("nim")'
+                                        aria-label="Urutkan menurut NIM">
+                                    NIM <span class="ikon-urut" aria-hidden="true">@PanahUrut("nim")</span>
+                                </button>
+                            </th>
+                            <th>
+                                <button type="button" class="th-urut" @onclick='() => Urutkan("nama")'
+                                        aria-label="Urutkan menurut nama mahasiswa">
+                                    Nama Mahasiswa <span class="ikon-urut" aria-hidden="true">@PanahUrut("nama")</span>
+                                </button>
+                            </th>
+                            <th>
+                                <button type="button" class="th-urut" @onclick='() => Urutkan("email")'
+                                        aria-label="Urutkan menurut email">
+                                    Email <span class="ikon-urut" aria-hidden="true">@PanahUrut("email")</span>
+                                </button>
+                            </th>
+                            <th>
+                                <button type="button" class="th-urut" @onclick='() => Urutkan("angkatan")'
+                                        aria-label="Urutkan menurut angkatan">
+                                    Angkatan <span class="ikon-urut" aria-hidden="true">@PanahUrut("angkatan")</span>
+                                </button>
+                            </th>
+                            <th>
+                                <button type="button" class="th-urut" @onclick='() => Urutkan("wali")'
+                                        aria-label="Urutkan menurut dosen wali">
+                                    Dosen Wali <span class="ikon-urut" aria-hidden="true">@PanahUrut("wali")</span>
+                                </button>
+                            </th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in DataTampil)
+                        {
+                            <tr>
+                                <td data-label="NIM"><strong>@m.Nim</strong></td>
+                                <td data-label="Nama">@m.NamaMahasiswa</td>
+                                <td data-label="Email">@m.Email</td>
+                                <td data-label="Angkatan">@m.Angkatan</td>
+                                <td data-label="Dosen Wali"><span class="badge-wali">@m.NamaDosenWali</span></td>
+                                <td data-label="Aksi" class="text-end text-nowrap">
+                                    <a href="mahasiswa/edit/@m.MahasiswaId" class="btn btn-sm btn-outline-primary me-1">
+                                        <svg class="ikon-kecil" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                             aria-hidden="true">
+                                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+                                        </svg>
+                                        Ubah
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            @onclick="() => MintaHapus(m)">
+                                        <svg class="ikon-kecil" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                             aria-hidden="true">
+                                            <path d="M4 7h16M10 7V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M10 11v6M14 11v6"></path>
+                                        </svg>
+                                        Hapus
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="halaman-baris">
+                <span class="text-muted small">@InfoBaris</span>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <label class="text-muted small mb-0" for="ukuranMahasiswa">Baris per halaman</label>
+                    <select id="ukuranMahasiswa" class="form-select form-select-sm ukuran-halaman"
+                            value="@ukuranHalaman" @onchange="UbahUkuran">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                    </select>
+                    <button type="button" class="btn btn-sm btn-outline-primary" disabled="@(HalamanTampil <= 1)"
+                            @onclick="Sebelumnya">
+                        &laquo; Sebelumnya
+                    </button>
+                    <span class="small text-muted" aria-live="polite">Halaman @HalamanTampil / @TotalHalaman</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary" disabled="@(HalamanTampil >= TotalHalaman)"
+                            @onclick="Berikutnya">
+                        Berikutnya &raquo;
+                    </button>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<ConfirmDialog @bind-Visible="dialogHapus"
+               Judul="Hapus Data Mahasiswa"
+               Pesan="Data mahasiswa ini akan dihapus permanen. Batal?"
+               Detail="@(mhsHapus is null ? null : $"{mhsHapus.Nim} - {mhsHapus.NamaMahasiswa}")"
+               OnKonfirmasi="KonfirmasiHapus"
+               Sibuk="sedangHapus" />
+
+@code {
+    private List<Mahasiswa> daftar = new();
+    private bool memuat = true;
+    private bool gagal;
+    private string? pesanGagal;
+    private string kataCari = string.Empty;
+
+    private Mahasiswa? mhsHapus;
+    private bool dialogHapus;
+    private bool sedangHapus;
+
+    private string kolomUrut = "nim";
+    private bool urutNaik = true;
+    private int halamanAktif = 1;
+    private int ukuranHalaman = 5;
+
+    private IEnumerable<Mahasiswa> HasilPencarian =>
+        string.IsNullOrWhiteSpace(kataCari)
+            ? daftar
+            : daftar.Where(m => m.Nim.Contains(kataCari, StringComparison.OrdinalIgnoreCase)
+                             || m.NamaMahasiswa.Contains(kataCari, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Pengurutan kolom diterapkan setelah pencarian.</summary>
+    private IEnumerable<Mahasiswa> HasilUrut => kolomUrut switch
+    {
+        "nama" => urutNaik
+            ? HasilPencarian.OrderBy(m => m.NamaMahasiswa, StringComparer.OrdinalIgnoreCase)
+            : HasilPencarian.OrderByDescending(m => m.NamaMahasiswa, StringComparer.OrdinalIgnoreCase),
+        "email" => urutNaik
+            ? HasilPencarian.OrderBy(m => m.Email, StringComparer.OrdinalIgnoreCase)
+            : HasilPencarian.OrderByDescending(m => m.Email, StringComparer.OrdinalIgnoreCase),
+        "angkatan" => urutNaik
+            ? HasilPencarian.OrderBy(m => m.Angkatan)
+            : HasilPencarian.OrderByDescending(m => m.Angkatan),
+        "wali" => urutNaik
+            ? HasilPencarian.OrderBy(m => m.NamaDosenWali, StringComparer.OrdinalIgnoreCase)
+            : HasilPencarian.OrderByDescending(m => m.NamaDosenWali, StringComparer.OrdinalIgnoreCase),
+        _ => urutNaik
+            ? HasilPencarian.OrderBy(m => m.Nim, StringComparer.OrdinalIgnoreCase)
+            : HasilPencarian.OrderByDescending(m => m.Nim, StringComparer.OrdinalIgnoreCase),
+    };
+
+    private int TotalData => HasilPencarian.Count();
+
+    private int TotalHalaman => Math.Max(1, (int)Math.Ceiling(TotalData / (double)ukuranHalaman));
+
+    private int HalamanTampil => Math.Clamp(halamanAktif, 1, TotalHalaman);
+
+    /// <summary>Baris pada halaman aktif: pencarian → pengurutan → pagination.</summary>
+    private IEnumerable<Mahasiswa> DataTampil =>
+        HasilUrut.Skip((HalamanTampil - 1) * ukuranHalaman).Take(ukuranHalaman);
+
+    private string InfoBaris => TotalData == 0
+        ? "Tidak ada data"
+        : $"Menampilkan {Math.Min((HalamanTampil - 1) * ukuranHalaman + 1, TotalData)}–{Math.Min(HalamanTampil * ukuranHalaman, TotalData)} dari {TotalData} data";
+
+    private void Urutkan(string kolom)
+    {
+        if (kolomUrut == kolom)
+        {
+            urutNaik = !urutNaik;
+        }
+        else
+        {
+            kolomUrut = kolom;
+            urutNaik = true;
+        }
+    }
+
+    private string PanahUrut(string kolom) =>
+        kolomUrut != kolom ? "↕" : urutNaik ? "▲" : "▼";
+
+    private void ResetHalaman() => halamanAktif = 1;
+
+    private void UbahUkuran(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var ukuran) && ukuran > 0)
+        {
+            ukuranHalaman = ukuran;
+            halamanAktif = 1;
+        }
+    }
+
+    private void Sebelumnya()
+    {
+        if (HalamanTampil > 1) halamanAktif = HalamanTampil - 1;
+    }
+
+    private void Berikutnya()
+    {
+        if (HalamanTampil < TotalHalaman) halamanAktif = HalamanTampil + 1;
+    }
+
+    protected override Task OnInitializedAsync() => MuatData();
+
+    private void KeFormTambah() => Navigasi.NavigateTo("mahasiswa/tambah");
+
+    private async Task MuatData()
+    {
+        memuat = true;
+        gagal = false;
+        pesanGagal = null;
+        StateHasChanged();
+
+        var hasil = await MahasiswaService.GetSemuaAsync();
+
+        memuat = false;
+        if (hasil.Berhasil && hasil.Data is not null)
+        {
+            daftar = hasil.Data;
+        }
+        else
+        {
+            gagal = true;
+            pesanGagal = hasil.Pesan ?? "Gagal memuat data mahasiswa.";
+        }
+    }
+
+    private void MintaHapus(Mahasiswa m)
+    {
+        mhsHapus = m;
+        dialogHapus = true;
+    }
+
+    private async Task KonfirmasiHapus()
+    {
+        if (mhsHapus is null) return;
+
+        sedangHapus = true;
+        StateHasChanged();
+
+        var hasil = await MahasiswaService.HapusAsync(mhsHapus.MahasiswaId);
+
+        sedangHapus = false;
+        dialogHapus = false;
+
+        if (hasil.Berhasil)
+        {
+            Toast.Sukses($"Data mahasiswa {mhsHapus.NamaMahasiswa} berhasil dihapus.");
+            mhsHapus = null;
+            await MuatData();
+        }
+        else
+        {
+            Toast.Gagal(hasil.Pesan ?? "Gagal menghapus data mahasiswa.");
+            mhsHapus = null;
+        }
+    }
+}

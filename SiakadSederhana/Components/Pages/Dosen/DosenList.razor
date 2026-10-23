@@ -1,0 +1,294 @@
+@page "/dosen"
+@inject DosenService DosenService
+@inject ToastService Toast
+@inject NavigationManager Navigasi
+
+<PageTitle>Daftar Dosen</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Data Dosen</h1>
+        <p class="page-subtitle">Daftar seluruh dosen yang terdaftar</p>
+    </div>
+    <a href="dosen/tambah" class="btn btn-accent">
+        <svg class="ikon-kecil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"></path>
+        </svg>
+        Tambah Dosen
+    </a>
+</div>
+
+<div class="siakad-card">
+    @if (memuat)
+    {
+        <LoadingSpinner Pesan="Memuat data dosen..." />
+    }
+    else if (gagal)
+    {
+        <ErrorAlert Pesan="@pesanGagal" CobaLagi="MuatData" />
+    }
+    else if (daftar.Count == 0)
+    {
+        <EmptyState Pesan="Belum ada data dosen."
+                    SubPesan="Mulai dengan menambahkan dosen pertama."
+                    TeksAksi="Tambah Dosen"
+                    Aksi="KeFormTambah" />
+    }
+    else
+    {
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+            <span class="text-muted small">@TotalData dari @daftar.Count data dosen</span>
+            <input type="search" class="form-control cari-box" placeholder="Cari NIDN atau nama..."
+                   @bind="kataCari" @bind:event="oninput" @bind:after="ResetHalaman" aria-label="Cari dosen" />
+        </div>
+
+        @if (!HasilPencarian.Any())
+        {
+            <EmptyState Pesan="Tidak ada dosen yang cocok dengan pencarian."
+                        SubPesan="Coba kata kunci lain." />
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-siakad">
+                    <thead>
+                        <tr>
+                            <th>
+                                <button type="button" class="th-urut" @onclick='() => Urutkan("nidn")'
+                                        aria-label="Urutkan menurut NIDN">
+                                    NIDN <span class="ikon-urut" aria-hidden="true">@PanahUrut("nidn")</span>
+                                </button>
+                            </th>
+                            <th>
+                                <button type="button" class="th-urut" @onclick='() => Urutkan("nama")'
+                                        aria-label="Urutkan menurut nama dosen">
+                                    Nama Dosen <span class="ikon-urut" aria-hidden="true">@PanahUrut("nama")</span>
+                                </button>
+                            </th>
+                            <th>
+                                <button type="button" class="th-urut" @onclick='() => Urutkan("email")'
+                                        aria-label="Urutkan menurut email">
+                                    Email <span class="ikon-urut" aria-hidden="true">@PanahUrut("email")</span>
+                                </button>
+                            </th>
+                            <th>
+                                <button type="button" class="th-urut" @onclick='() => Urutkan("prodi")'
+                                        aria-label="Urutkan menurut prodi">
+                                    Prodi <span class="ikon-urut" aria-hidden="true">@PanahUrut("prodi")</span>
+                                </button>
+                            </th>
+                            <th class="text-end">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in DataTampil)
+                        {
+                            <tr>
+                                <td data-label="NIDN"><strong>@d.Nidn</strong></td>
+                                <td data-label="Nama">@d.NamaDosen</td>
+                                <td data-label="Email">@d.Email</td>
+                                <td data-label="Prodi">@d.Prodi</td>
+                                <td data-label="Aksi" class="text-end text-nowrap">
+                                    <a href="dosen/edit/@d.DosenId" class="btn btn-sm btn-outline-primary me-1">
+                                        <svg class="ikon-kecil" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                             aria-hidden="true">
+                                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+                                        </svg>
+                                        Ubah
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            @onclick="() => MintaHapus(d)">
+                                        <svg class="ikon-kecil" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                             aria-hidden="true">
+                                            <path d="M4 7h16M10 7V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M10 11v6M14 11v6"></path>
+                                        </svg>
+                                        Hapus
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="halaman-baris">
+                <span class="text-muted small">@InfoBaris</span>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <label class="text-muted small mb-0" for="ukuranDosen">Baris per halaman</label>
+                    <select id="ukuranDosen" class="form-select form-select-sm ukuran-halaman"
+                            value="@ukuranHalaman" @onchange="UbahUkuran">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                    </select>
+                    <button type="button" class="btn btn-sm btn-outline-primary" disabled="@(HalamanTampil <= 1)"
+                            @onclick="Sebelumnya">
+                        &laquo; Sebelumnya
+                    </button>
+                    <span class="small text-muted" aria-live="polite">Halaman @HalamanTampil / @TotalHalaman</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary" disabled="@(HalamanTampil >= TotalHalaman)"
+                            @onclick="Berikutnya">
+                        Berikutnya &raquo;
+                    </button>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<ConfirmDialog @bind-Visible="dialogHapus"
+               Judul="Hapus Data Dosen"
+               Pesan="Data dosen ini akan dihapus permanen. Batal?"
+               Detail="@(dosenHapus is null ? null : $"{dosenHapus.Nidn} - {dosenHapus.NamaDosen}")"
+               OnKonfirmasi="KonfirmasiHapus"
+               Sibuk="sedangHapus" />
+
+@code {
+    private List<Dosen> daftar = new();
+    private bool memuat = true;
+    private bool gagal;
+    private string? pesanGagal;
+    private string kataCari = string.Empty;
+
+    private Dosen? dosenHapus;
+    private bool dialogHapus;
+    private bool sedangHapus;
+
+    private string kolomUrut = "nidn";
+    private bool urutNaik = true;
+    private int halamanAktif = 1;
+    private int ukuranHalaman = 5;
+
+    private IEnumerable<Dosen> HasilPencarian =>
+        string.IsNullOrWhiteSpace(kataCari)
+            ? daftar
+            : daftar.Where(d => d.Nidn.Contains(kataCari, StringComparison.OrdinalIgnoreCase)
+                             || d.NamaDosen.Contains(kataCari, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Pengurutan kolom diterapkan setelah pencarian.</summary>
+    private IEnumerable<Dosen> HasilUrut => kolomUrut switch
+    {
+        "nama" => urutNaik
+            ? HasilPencarian.OrderBy(d => d.NamaDosen, StringComparer.OrdinalIgnoreCase)
+            : HasilPencarian.OrderByDescending(d => d.NamaDosen, StringComparer.OrdinalIgnoreCase),
+        "email" => urutNaik
+            ? HasilPencarian.OrderBy(d => d.Email, StringComparer.OrdinalIgnoreCase)
+            : HasilPencarian.OrderByDescending(d => d.Email, StringComparer.OrdinalIgnoreCase),
+        "prodi" => urutNaik
+            ? HasilPencarian.OrderBy(d => d.Prodi, StringComparer.OrdinalIgnoreCase)
+            : HasilPencarian.OrderByDescending(d => d.Prodi, StringComparer.OrdinalIgnoreCase),
+        _ => urutNaik
+            ? HasilPencarian.OrderBy(d => d.Nidn, StringComparer.OrdinalIgnoreCase)
+            : HasilPencarian.OrderByDescending(d => d.Nidn, StringComparer.OrdinalIgnoreCase),
+    };
+
+    private int TotalData => HasilPencarian.Count();
+
+    private int TotalHalaman => Math.Max(1, (int)Math.Ceiling(TotalData / (double)ukuranHalaman));
+
+    private int HalamanTampil => Math.Clamp(halamanAktif, 1, TotalHalaman);
+
+    /// <summary>Baris pada halaman aktif: pencarian → pengurutan → pagination.</summary>
+    private IEnumerable<Dosen> DataTampil =>
+        HasilUrut.Skip((HalamanTampil - 1) * ukuranHalaman).Take(ukuranHalaman);
+
+    private string InfoBaris => TotalData == 0
+        ? "Tidak ada data"
+        : $"Menampilkan {Math.Min((HalamanTampil - 1) * ukuranHalaman + 1, TotalData)}–{Math.Min(HalamanTampil * ukuranHalaman, TotalData)} dari {TotalData} data";
+
+    private void Urutkan(string kolom)
+    {
+        if (kolomUrut == kolom)
+        {
+            urutNaik = !urutNaik;
+        }
+        else
+        {
+            kolomUrut = kolom;
+            urutNaik = true;
+        }
+    }
+
+    private string PanahUrut(string kolom) =>
+        kolomUrut != kolom ? "↕" : urutNaik ? "▲" : "▼";
+
+    private void ResetHalaman() => halamanAktif = 1;
+
+    private void UbahUkuran(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var ukuran) && ukuran > 0)
+        {
+            ukuranHalaman = ukuran;
+            halamanAktif = 1;
+        }
+    }
+
+    private void Sebelumnya()
+    {
+        if (HalamanTampil > 1) halamanAktif = HalamanTampil - 1;
+    }
+
+    private void Berikutnya()
+    {
+        if (HalamanTampil < TotalHalaman) halamanAktif = HalamanTampil + 1;
+    }
+
+    protected override Task OnInitializedAsync() => MuatData();
+
+    private void KeFormTambah() => Navigasi.NavigateTo("dosen/tambah");
+
+    private async Task MuatData()
+    {
+        memuat = true;
+        gagal = false;
+        pesanGagal = null;
+        StateHasChanged();
+
+        var hasil = await DosenService.GetSemuaAsync();
+
+        memuat = false;
+        if (hasil.Berhasil && hasil.Data is not null)
+        {
+            daftar = hasil.Data;
+        }
+        else
+        {
+            gagal = true;
+            pesanGagal = hasil.Pesan ?? "Gagal memuat data dosen.";
+        }
+    }
+
+    private void MintaHapus(Dosen d)
+    {
+        dosenHapus = d;
+        dialogHapus = true;
+    }
+
+    private async Task KonfirmasiHapus()
+    {
+        if (dosenHapus is null) return;
+
+        sedangHapus = true;
+        StateHasChanged();
+
+        var hasil = await DosenService.HapusAsync(dosenHapus.DosenId);
+
+        sedangHapus = false;
+        dialogHapus = false;
+
+        if (hasil.Berhasil)
+        {
+            Toast.Sukses($"Data dosen {dosenHapus.NamaDosen} berhasil dihapus.");
+            dosenHapus = null;
+            await MuatData();
+        }
+        else
+        {
+            Toast.Gagal(hasil.Pesan ?? "Gagal menghapus data dosen.");
+            dosenHapus = null;
+        }
+    }
+}
