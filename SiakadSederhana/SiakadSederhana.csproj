@@ -29,7 +29,7 @@
         <MauiXamlInflator>SourceGen</MauiXamlInflator>
 
         <!-- Display name -->
-        <ApplicationTitle>SiakadSederhana</ApplicationTitle>
+        <ApplicationTitle>SiAkademik</ApplicationTitle>
 
         <!-- App Identifier -->
         <ApplicationId>com.companyname.siakadsederhana</ApplicationId>

@@ -72,6 +72,75 @@ else
         </div>
     </div>
 
+    <div class="widget-grid mt-3">
+        @* ---------- Widget 1: Analisis Beban Dosen Wali ---------- *@
+        <section class="widget" aria-labelledby="judulBeban">
+            <h2 id="judulBeban" class="widget-judul">Analisis Beban Dosen Wali</h2>
+            <p class="widget-sub">Dosen tanpa bimbingan ditandai merah di urutan teratas, disusul beban terbanyak</p>
+
+            <div class="daftar-beban" tabindex="0" aria-label="Daftar beban dosen wali, dapat digulir">
+                @if (BebanDosen.Count == 0)
+                {
+                    <p class="text-muted small mb-0 px-1">Belum ada data dosen.</p>
+                }
+                else
+                {
+                    @foreach (var b in BebanDosen)
+                    {
+                        <div class="beban-baris">
+                            <div class="beban-nama">
+                                <strong>@b.NamaDosen</strong>
+                                <span class="beban-prodi">@b.Prodi</span>
+                            </div>
+                            <div class="beban-kanan">
+                                @if (b.JumlahBimbingan == 0)
+                                {
+                                    <span class="badge-kosong">Belum Ada Bimbingan</span>
+                                }
+                                else
+                                {
+                                    <span class="beban-jumlah">@b.JumlahBimbingan mahasiswa</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </section>
+
+        @* ---------- Widget 2: Distribusi Angkatan & Masa Studi ---------- *@
+        <section class="widget" aria-labelledby="judulAngkatan">
+            <h2 id="judulAngkatan" class="widget-judul">Distribusi Angkatan &amp; Masa Studi</h2>
+            <p class="widget-sub">Jumlah dan persentase mahasiswa per angkatan (2020&ndash;2026)</p>
+
+            @if (jumlahMahasiswa == 0)
+            {
+                <p class="text-muted small mb-0">Belum ada data mahasiswa.</p>
+            }
+            else
+            {
+                @foreach (var a in DistribusiAngkatan)
+                {
+                    <div class="angkatan-baris">
+                        <span class="angkatan-label">
+                            @a.Angkatan
+                            @if (a.Angkatan <= 2020)
+                            {
+                                <span class="badge-perhatian">Perhatian Khusus</span>
+                            }
+                        </span>
+                        <div class="batang-track" role="img"
+                             aria-label="Angkatan @a.Angkatan: @a.Jumlah mahasiswa, @a.PersenText">
+                            <div class="batang-isi @(a.Angkatan <= 2020 ? "batang-perhatian" : "")"
+                                 style="width:@($"{a.Persen}%")"></div>
+                        </div>
+                        <span class="angkatan-teks">@($"{a.Jumlah} mahasiswa · {a.PersenText}")</span>
+                    </div>
+                }
+            }
+        </section>
+    </div>
+
     <div class="stat-grid mt-3">
         <a href="dosen" class="modul-card">
             <span class="stat-ikon stat-ikon-biru">
@@ -103,36 +172,61 @@ else
             </div>
         </a>
     </div>
-
-    <div class="siakad-card mt-3">
-        <h2 class="h6 fw-bold mb-1">Aksi Cepat</h2>
-        <p class="text-muted small mb-3">Langsung ke formulir penambahan data:</p>
-        <div class="d-flex flex-wrap gap-2">
-            <a href="dosen/tambah" class="btn btn-accent">
-                <svg class="ikon-kecil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                     stroke-linecap="round" aria-hidden="true">
-                    <path d="M12 5v14M5 12h14"></path>
-                </svg>
-                Tambah Dosen
-            </a>
-            <a href="mahasiswa/tambah" class="btn btn-primary">
-                <svg class="ikon-kecil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                     stroke-linecap="round" aria-hidden="true">
-                    <path d="M12 5v14M5 12h14"></path>
-                </svg>
-                Tambah Mahasiswa
-            </a>
-        </div>
-    </div>
 }
 
 @code {
+    private List<SiakadSederhana.Models.Dosen> daftarDosen = new();
+    private List<SiakadSederhana.Models.Mahasiswa> daftarMahasiswa = new();
     private int jumlahDosen;
     private int jumlahMahasiswa;
     private int jumlahWaliAktif;
     private bool memuat = true;
     private bool gagal;
     private string? pesanGagal;
+
+    private sealed record BarisBeban(int DosenId, string NamaDosen, string Prodi, int JumlahBimbingan);
+    private sealed record BarisAngkatan(int Angkatan, int Jumlah, double Persen, string PersenText);
+
+    /// <summary>Urutan: dosen tanpa bimbingan (badge merah) di atas, lalu beban terbanyak menurun.</summary>
+    private List<BarisBeban> BebanDosen
+    {
+        get
+        {
+            var perDosen = daftarMahasiswa
+                .GroupBy(m => m.DosenId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            return daftarDosen
+                .Select(d => new BarisBeban(
+                    d.DosenId, d.NamaDosen, d.Prodi,
+                    perDosen.GetValueOrDefault(d.DosenId, 0)))
+                .OrderBy(b => b.JumlahBimbingan > 0) // false (0 bimbingan) → urutan pertama
+                .ThenByDescending(b => b.JumlahBimbingan)
+                .ThenBy(b => b.NamaDosen, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+    }
+
+    /// <summary>Jumlah + persentase mahasiswa per angkatan untuk rentang 2020-2026.</summary>
+    private List<BarisAngkatan> DistribusiAngkatan
+    {
+        get
+        {
+            var total = daftarMahasiswa.Count;
+            var perTahun = daftarMahasiswa
+                .GroupBy(m => m.Angkatan)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var hasil = new List<BarisAngkatan>();
+            for (var th = 2020; th <= 2026; th++)
+            {
+                var jumlah = perTahun.GetValueOrDefault(th, 0);
+                var persen = total == 0 ? 0 : Math.Round(jumlah * 100.0 / total, 1);
+                hasil.Add(new BarisAngkatan(th, jumlah, persen, $"{persen:0.#}%"));
+            }
+            return hasil;
+        }
+    }
 
     protected override Task OnInitializedAsync() => MuatData();
 
@@ -162,9 +256,12 @@ else
             return;
         }
 
+        daftarDosen = hasilDosen.Data;
+        daftarMahasiswa = hasilMahasiswa.Data;
+
         // Angka dihitung dari data aktual yang dikembalikan API, bukan hardcoded.
-        jumlahDosen = hasilDosen.Data.Count;
-        jumlahMahasiswa = hasilMahasiswa.Data.Count;
-        jumlahWaliAktif = hasilMahasiswa.Data.Select(m => m.DosenId).Distinct().Count();
+        jumlahDosen = daftarDosen.Count;
+        jumlahMahasiswa = daftarMahasiswa.Count;
+        jumlahWaliAktif = daftarMahasiswa.Select(m => m.DosenId).Distinct().Count();
     }
 }
