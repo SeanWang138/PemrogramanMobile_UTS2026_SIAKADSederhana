@@ -65,6 +65,7 @@ Now listening on: http://localhost:5103
 * Saat pertama dijalankan, database `siakad.db` + migrasi + **data seed** (3 dosen, 5 mahasiswa) dibuat **otomatis** — tidak ada langkah manual sama sekali.
 * Cek di browser: **<http://localhost:5103/swagger>** — seluruh endpoint bisa dilihat dan dicoba langsung dari Swagger.
 * **Biarkan terminal API ini tetap terbuka** selama memakai aplikasi.
+* Jika **HP Android terpasang via USB**, terminal juga menampilkan `OK: USB forwarding aktif …` — `adb reverse` dibuat otomatis, jadi HP langsung bisa mengakses API tanpa satu pun perintah manual.
 * *(Alternatif: buka `SiakadSederhana.slnx` di Visual Studio, jadikan `SiakadSederhana.API` startup project, lalu tekan F5.)*
 
 ### Langkah 2 — Jalankan Frontend MAUI Blazor Hybrid
@@ -96,11 +97,13 @@ Setelah itu silakan mencoba: **Beranda** (dashboard) → **Dosen** (tambah/edit/
 
 ## 📱 Yang Perlu Disesuaikan di Device Anda
 
-Alamat API dibedakan **otomatis per platform** lewat kode kondisional di `SiakadSederhana/MauiProgram.cs`:
+Alamat API dibedakan **otomatis per platform dan per jenis perangkat** (emulator vs HP fisik) di `SiakadSederhana/MauiProgram.cs`:
 
 ```csharp
 #if ANDROID
-var apiBaseAddress = "http://10.0.2.2:5103";   // emulator Android → host PC
+var apiBaseAddress = DeviceInfo.DeviceType == DeviceType.Virtual
+    ? "http://10.0.2.2:5103"      // emulator Android → host PC
+    : "http://127.0.0.1:5103";    // HP fisik → lewat adb reverse (otomatis)
 #else
 var apiBaseAddress = "http://localhost:5103";  // Windows Desktop
 #endif
@@ -117,13 +120,16 @@ Tabel penyesuaian — **cek kondisi Anda**:
 |---|---|
 | **Windows Desktop** (jalur utama) | **Tidak ada perubahan apa pun.** Jika Windows Firewall menampilkan dialog izin jaringan saat pertama kali API dijalankan, klik **Izinkan** (port 5103). |
 | **Android Emulator** (AVD) | **Tidak ada perubahan** — kode otomatis memakai `10.0.2.2` (alias host PC dari dalam emulator). Pastikan API berjalan di PC sebelum membuka app. |
-| **HP Android fisik (USB)** | Jalankan `adb reverse tcp:5103 tcp:5103` sekali setelah HP terdeteksi, **lalu ubah** `10.0.2.2` pada blok `#if ANDROID` di `MauiProgram.cs` menjadi `localhost`. |
-| **HP Android fisik (satu Wi-Fi)** | Cek IP PC (`ipconfig` → IPv4, mis. `192.168.1.5`), **lalu ubah** `10.0.2.2` menjadi IP tersebut → `http://192.168.1.5:5103`. PC dan HP harus satu jaringan; izinkan firewall port 5103 untuk jaringan privat. |
+| **HP Android fisik (USB)** | **Tidak ada perubahan apa pun.** Colok HP via USB (USB debugging aktif), jalankan API, lalu buka app — `adb reverse tcp:5103 tcp:5103` dibuat **otomatis dua lapis**: saat API dijalankan (baris `OK: USB forwarding aktif …` di terminal) dan saat build/deploy target Android. |
+| **HP Android fisik (satu Wi-Fi)** | Cek IP PC (`ipconfig` → IPv4, mis. `192.168.1.5`), **lalu ubah** `127.0.0.1` (cabang HP fisik di `MauiProgram.cs`) menjadi IP tersebut → `http://192.168.1.5:5103`. PC dan HP harus satu jaringan; izinkan firewall port 5103 untuk jaringan privat. Catatan: jalur otomatis `adb reverse` hanya lewat kabel USB. |
 | **Port 5103 sudah terpakai program lain** | Ubah di **dua tempat agar selalu sinkron**: (1) `SiakadSederhana.API/Properties/launchSettings.json` → `applicationUrl`; (2) `MauiProgram.cs` → `apiBaseAddress`. Contoh port 5200: `http://localhost:5200`. |
 | **Build frontend gagal: "file is being used by another process"** | Aplikasi MAUI masih terbuka — **tutup jendela app dulu**, lalu build ulang. |
 | **Ingin reset data ke bawaan** | Tutup API, hapus file `SiakadSederhana.API/siakad.db`, jalankan ulang API — migrasi + seed dibuat kembali otomatis. |
 
-> Catatan: API sengaja memakai **HTTP** (profile `http`, port 5103) agar tidak ada kendala sertifikat *self-signed* HTTPS di emulator/perangkat. Profile `https` (port 7005) tetap tersedia tetapi tidak diperlukan.
+> Catatan penting:
+>
+> * API sengaja memakai **HTTP** (port 5103) agar tidak ada kendala sertifikat *self-signed* HTTPS di emulator/perangkat; app Android memakai `android:usesCleartextTraffic="true"` agar traffic `http://` diizinkan sistem.
+> * `UseHttpsRedirection` sengaja **tidak dipasang** di `Program.cs`: redirect ke port HTTPS 7005 akan merusak jalur `adb reverse` yang hanya meneruskan port 5103. Profile `https` tetap tersedia di `launchSettings.json` tetapi tidak diperlukan.
 
 ---
 
@@ -148,8 +154,9 @@ SiakadSederhana/                        # Root repository
 │   │   ├── SiakadDbContext.cs           # DbContext, relasi 1-N, seeding
 │   │   └── Migrations/                 # Migrasi EF Core (InitialCreate)
 │   ├── Properties/launchSettings.json  # Port API: http://localhost:5103
+│   ├── UsbForwarding.cs                # Auto "adb reverse" untuk HP Android (best-effort)
 │   ├── appsettings.json
-│   └── Program.cs                      # Pipeline: Swagger + migrasi + seed otomatis
+│   └── Program.cs                      # Pipeline: Swagger + migrasi + seed + auto adb reverse
 │
 ├── SiakadSederhana/                    # ── Frontend MAUI Blazor Hybrid ──
 │   ├── MauiProgram.cs                  # DI + BaseAddress HttpClient per platform
@@ -278,9 +285,10 @@ dotnet test SiakadSederhana.API.Tests/SiakadSederhana.API.Tests.csproj
 | Gejala | Penyebab & solusi |
 |---|---|
 | Halaman dashboard menampilkan panel merah "API tidak dapat dihubungi" | API belum dijalankan, atau port berubah. Pastikan terminal API menampilkan `Now listening on: http://localhost:5103`. |
+| App di HP panel merah, tetapi Chrome di HP bisa membuka Swagger | Koneksi jaringan sudah benar — biasanya app membuka data sebelum API hidup. **Tutup paksa app lalu buka lagi**; pastikan kabel USB sudah terpasang sebelum membuka app (auto `adb reverse` aktif saat API start). |
 | `error MSB3027 ... file is being used by another process` | Aplikasi MAUI masih terbuka — tutup dulu, lalu build ulang. |
 | `error NETSDK1147 ... workload maui not installed` | Jalankan `dotnet workload install maui`, atau instal workload *.NET Multi-platform App UI development* lewat Visual Studio Installer. |
-| Build frontend gagal target Android | Pastikan Android SDK + Emulator terpasang via Visual Studio Device Manager, dan emulator sudah **menyala** sebelum menekan Run. |
+| Build frontend gagal target Android | Pastikan Android SDK + Emulator terpasang via Visual Studio Device Manager, dan emulator sudah **menyala** (atau HP terpasang via USB dengan debugging aktif) sebelum menekan Run. |
 | Port 5103 sudah dipakai program lain | Lihat tabel penyesuaian di atas (ubah di `launchSettings.json` **dan** `MauiProgram.cs`). |
 | Data aneh/sudah berubah saat demo | Reset ke bawaan: tutup API → hapus `siakad.db` → jalankan API lagi (seed 3 dosen + 5 mahasiswa dibuat ulang). |
 
