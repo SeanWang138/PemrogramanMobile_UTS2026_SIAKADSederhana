@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Devices;
 using SiakadSederhana.Services;
 
 namespace SiakadSederhana
@@ -22,11 +23,16 @@ namespace SiakadSederhana
             builder.Logging.AddDebug();
 #endif
 
-            // Base address Web API.
-            // Emulator Android mengakses komputer host melalui 10.0.2.2,
-            // platform lain (Windows/iOS/Mac) cukup memakai localhost.
+            // Base address Web API:
+            // - Windows/iOS/Mac  : localhost
+            // - Emulator Android : 10.0.2.2 (alias host PC, tanpa adb reverse)
+            // - HP Android fisik : 127.0.0.1 lewat "adb reverse tcp:5103 tcp:5103"
+            //   (127.0.0.1, bukan localhost, agar bebas ambigu resolusi IPv6 ::1
+            //    yang tidak dibuka oleh adb reverse)
 #if ANDROID
-            var apiBaseAddress = "http://10.0.2.2:5103";
+            var apiBaseAddress = DeviceInfo.DeviceType == DeviceType.Virtual
+                ? "http://10.0.2.2:5103"
+                : "http://127.0.0.1:5103";
 #else
             var apiBaseAddress = "http://localhost:5103";
 #endif

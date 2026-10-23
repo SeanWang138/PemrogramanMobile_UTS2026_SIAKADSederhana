@@ -38,7 +38,7 @@ namespace SiakadSederhana.Services
         }
 
         /// <summary>POST/PUT/DELETE: mengirim data tanpa mengharapkan balasan data.</summary>
-        protected static async Task<ApiResult> KirimAsync(Func<Task<HttpResponseMessage>> kirim)
+        protected async Task<ApiResult> KirimAsync(Func<Task<HttpResponseMessage>> kirim)
         {
             try
             {
@@ -60,10 +60,22 @@ namespace SiakadSederhana.Services
         private static async Task<ApiResult> HasilGagalAsync(HttpResponseMessage response) =>
             ApiResult.Gagal(await BacaPesanErrorAsync(response), (int)response.StatusCode);
 
-        private static string PesanKoneksi(Exception ex) =>
-            ex is TaskCanceledException
-                ? "Permintaan ke API melebihi batas waktu (timeout). Periksa koneksi Anda."
-                : "Tidak dapat terhubung ke API. Pastikan layanan API sedang berjalan.";
+        /// <summary>
+        /// Pesan koneksi menyertakan alamat API yang dipakai dan alasan asli
+        /// exception (mis. "Connection refused (127.0.0.1:5103)") agar kegagalan
+        /// di HP dapat langsung didiagnosis dari panel merah tanpa menebak-nebak.
+        /// </summary>
+        private string PesanKoneksi(Exception ex)
+        {
+            var alasan = ex is TaskCanceledException
+                ? "melebihi batas waktu (timeout)"
+                : ex.Message;
+
+            if (ex.InnerException is not null)
+                alasan += $" - {ex.InnerException.Message}";
+
+            return $"Tidak dapat terhubung ke API di {Http.BaseAddress} ({alasan}). Pastikan layanan API sedang berjalan.";
+        }
 
         /// <summary>
         /// Membaca pesan error dari body respons API.

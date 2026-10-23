@@ -72,4 +72,21 @@
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
     </ItemGroup>
 
+    <!-- Auto "adb reverse" saat build/deploy Android: HP dapat mengakses
+         http://localhost:5103 tanpa perintah terminal. Best-effort: bila adb/HP
+         tidak tersedia, pesan senyap dan build tetap lulus. -->
+    <Target Name="SiakadUsbReverseOtomatis"
+            AfterTargets="Build"
+            Condition="'$(TargetFramework)' == 'net10.0-android'">
+        <PropertyGroup>
+            <_SiakadAdb>$(AndroidSdkDirectory)platform-tools\adb.exe</_SiakadAdb>
+            <_SiakadAdb Condition="!Exists('$(_SiakadAdb)')">C:\Program Files (x86)\Android\android-sdk\platform-tools\adb.exe</_SiakadAdb>
+        </PropertyGroup>
+        <Exec Command="&quot;$(_SiakadAdb)&quot; reverse tcp:5103 tcp:5103"
+              Condition="Exists('$(_SiakadAdb)')"
+              IgnoreExitCode="true"
+              StandardOutputImportance="low"
+              StandardErrorImportance="low" />
+    </Target>
+
 </Project>
