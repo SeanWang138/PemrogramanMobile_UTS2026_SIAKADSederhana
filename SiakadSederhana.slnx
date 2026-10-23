@@ -1,4 +1,6 @@
 <Solution>
+  <Folder Name="/Solution Items/" />
+  <Project Path="SiakadSederhana.API.Tests/SiakadSederhana.API.Tests.csproj" />
   <Project Path="SiakadSederhana.API/SiakadSederhana.API.csproj" />
   <Project Path="SiakadSederhana/SiakadSederhana.csproj">
     <Deploy Solution="Debug|*" />
