@@ -3,10 +3,8 @@ using SiakadSederhana.API.Models;
 
 namespace SiakadSederhana.API.Data
 {
-    public class SiakadDbContext : DbContext
+    public class SiakadDbContext(DbContextOptions<SiakadDbContext> options) : DbContext(options)
     {
-        public SiakadDbContext(DbContextOptions<SiakadDbContext> options) : base(options) { }
-
         public DbSet<Dosen> Dosen => Set<Dosen>();
         public DbSet<Mahasiswa> Mahasiswa => Set<Mahasiswa>();
 

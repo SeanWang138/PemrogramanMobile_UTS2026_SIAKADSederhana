@@ -8,11 +8,9 @@ namespace SiakadSederhana.Services
     /// status HTTP non-sukses, respons error JSON dari API, dan koneksi
     /// yang gagal/timeout sehingga halaman cukup menampilkan pesan hasil.
     /// </summary>
-    public abstract class ApiService
+    public abstract class ApiService(HttpClient http)
     {
-        protected readonly HttpClient Http;
-
-        protected ApiService(HttpClient http) => Http = http;
+        protected readonly HttpClient Http = http;
 
         /// <summary>GET: mengambil data dari API dan mengubahnya menjadi objek T.</summary>
         protected async Task<ApiResult<T>> DapatkanAsync<T>(string url)
@@ -40,7 +38,7 @@ namespace SiakadSederhana.Services
         }
 
         /// <summary>POST/PUT/DELETE: mengirim data tanpa mengharapkan balasan data.</summary>
-        protected async Task<ApiResult> KirimAsync(Func<Task<HttpResponseMessage>> kirim)
+        protected static async Task<ApiResult> KirimAsync(Func<Task<HttpResponseMessage>> kirim)
         {
             try
             {

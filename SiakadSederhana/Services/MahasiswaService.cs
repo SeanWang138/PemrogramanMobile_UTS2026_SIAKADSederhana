@@ -4,11 +4,9 @@ using SiakadSederhana.Models;
 namespace SiakadSederhana.Services
 {
     /// <summary>Service akses endpoint /api/mahasiswa melalui HttpClient.</summary>
-    public class MahasiswaService : ApiService
+    public class MahasiswaService(HttpClient http) : ApiService(http)
     {
         private const string Url = "api/mahasiswa";
-
-        public MahasiswaService(HttpClient http) : base(http) { }
 
         public Task<ApiResult<List<Mahasiswa>>> GetSemuaAsync() =>
             DapatkanAsync<List<Mahasiswa>>(Url);

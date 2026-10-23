@@ -4,11 +4,9 @@ using SiakadSederhana.Models;
 namespace SiakadSederhana.Services
 {
     /// <summary>Service akses endpoint /api/dosen melalui HttpClient.</summary>
-    public class DosenService : ApiService
+    public class DosenService(HttpClient http) : ApiService(http)
     {
         private const string Url = "api/dosen";
-
-        public DosenService(HttpClient http) : base(http) { }
 
         public Task<ApiResult<List<Dosen>>> GetSemuaAsync() =>
             DapatkanAsync<List<Dosen>>(Url);

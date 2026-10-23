@@ -417,6 +417,101 @@ h1:focus {
     vertical-align: -0.12em;
 }
 
+/* ---------- Halaman beranda (dashboard) ---------- */
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1rem;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background-color: var(--siakad-surface);
+    border: 1px solid var(--siakad-border);
+    border-radius: 0.85rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.stat-angka {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--siakad-text, #0F172A);
+}
+
+.stat-label {
+    font-size: 0.87rem;
+    color: var(--siakad-muted);
+    margin-top: 0.2rem;
+}
+
+.stat-ikon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+}
+
+    .stat-ikon svg {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+.stat-ikon-biru {
+    background-color: #EFF6FF;
+    color: var(--siakad-primary);
+}
+
+.stat-ikon-amber {
+    background-color: #FEF3C7;
+    color: #B45309;
+}
+
+.stat-ikon-hijau {
+    background-color: #DCFCE7;
+    color: var(--siakad-success);
+}
+
+.modul-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    background-color: var(--siakad-surface);
+    border: 1px solid var(--siakad-border);
+    border-radius: 0.85rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+    .modul-card:hover {
+        border-color: var(--siakad-primary);
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+        transform: translateY(-2px);
+        color: inherit;
+    }
+
+.modul-judul {
+    margin: 0 0 0.25rem;
+    font-weight: 700;
+    color: var(--siakad-primary);
+}
+
+.modul-desc {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--siakad-muted);
+}
+
 /* ---------- Sorting & pagination tabel ---------- */
 
 .th-urut {
