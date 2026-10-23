@@ -297,6 +297,6 @@ dotnet test SiakadSederhana.API.Tests/SiakadSederhana.API.Tests.csproj
 Sesuai dengan ketentuan integritas akademik tugas UTS, alat bantu AI digunakan untuk mendukung proses pengembangan aplikasi dengan rincian:
 
 * **ChatGPT:** Digunakan untuk *brainstorming* konsep arsitektur *Client-Server*, perancangan struktur DTO, dan penyusunan draf dokumentasi/README.
-* **Gemini / Cursor:** Digunakan sebagai asisten koding dalam pembuatan instruksi prompt requirement, generasi sintaks C# / Razor Blazor, validasi query LINQ, serta debugging penanganan error HTTP.
+* **Gemini / OpenCode:** Digunakan sebagai asisten koding dalam pembuatan instruksi prompt requirement, generasi sintaks C# / Razor Blazor, validasi query LINQ, serta debugging penanganan error HTTP.
 
 *Seluruh kode, logika bisnis, dan pengujian aplikasi telah dipahami, diverifikasi, dan diuji secara mandiri.*
